@@ -1,11 +1,8 @@
 """
-在这里定义不同“工作流 / 智能体拓扑”，例如：
+在这里定义不同“工作流”，例如：
 - 纯对话问答
 - CAD 设计 → JSON 生成 → STEP 编译
 - STEP → MATLAB 仿真 → 结果分析
-
-目前先实现一个基础的 “对话 + CAD 工具调用” 工作流，
-返回一个可 `.invoke({"history": [...], "input": "..."})` 的 Runnable。
 
 注意：
 - 为了兼容不同版本的 langchain，本文件不再依赖 `langchain.agents` 模块，
