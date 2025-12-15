@@ -1,0 +1,42 @@
+# ---- Python / venv ----
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+dist/
+build/
+*.egg-info/
+
+# ---- IDE ----
+.vscode/
+.idea/
+
+# ---- OS ----
+Thumbs.db
+Desktop.ini
+
+# ---- Secrets ----
+.env
+
+# ---- Project outputs (do not commit generated artifacts) ----
+logs/
+
+# CAD generated
+data/py/
+data/step/
+
+# Simulation generated (COMSOL models are huge)
+data/sim_results/
+
+# Optimization runs / history (often large, not reproducible)
+data/opt/
+
+

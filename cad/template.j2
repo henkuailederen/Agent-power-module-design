@@ -1,0 +1,375 @@
+# ========================================================
+# === [SECTION-HEAD]  Imports & Global Utilities  ========
+# ========================================================
+import cadquery as cq
+from cadquery import Assembly,Location, Vector, Color, Workplane
+import math
+import copy
+import numpy as np
+import os
+from utils import *  # Import utility functions
+
+# ========================================================
+# === [SECTION-PARAM]  Geometric & Material Constants  ===
+# ========================================================
+width_ceramics            = {{ geometry.ceramics.width }}
+length_ceramics           = {{ geometry.ceramics.length }}
+thickness_ceramics        = {{ geometry.ceramics.thickness }}
+thickness_upper_Cu        = {{ geometry.copper.upper_thickness }}
+thickness_bottom_Cu       = {{ geometry.copper.lower_thickness }}
+fillet_value              = {{ geometry.fillet_radius }}
+distance_Cu_Cu            = {{ margins.cu2cu }}
+distance_Cu_Ceramics      = {{ margins.cu2ceramics }}
+distance_DBC_DBC          = {{ margins.dbc2dbc }}
+thickness_substrate_solder= {{ process.solder.substrate }}
+thickness_die_solder      = {{ process.solder.die }}
+width_die_IGBT, length_die_IGBT = {{ dies.igbt.size.width }}, {{ dies.igbt.size.length }}
+width_die_FWD,  length_die_FWD  = {{ dies.fwd.size.width }}, {{ dies.fwd.size.length }}
+num_bond_wire_IGBT        = {{ counts.bondwires.igbt }}
+num_bond_wire_FWD         = {{ counts.bondwires.fwd }}
+
+# ========================================================
+# === [SECTION-CONST]  Fixed Tolerances & Distances  =====
+# ========================================================
+TOLERANCE = 0.01
+EXTREME = 1000
+thickness_die = {{ process.die_thickness }}
+thickness_substrate = 2 
+hex_spacing = -1.5  
+radius_bottom_hex = 2.0  
+distance_substrate = {{ margins.substrate_edge }}
+
+# ========================================================
+# === [SECTION-TOPOLOGY]  Connection Dictionaries  ======
+# ========================================================
+connection_module = {
+{%- for entity in topology.module_entities %}
+    "{{ entity }}": {
+{%- for target in topology.module_entities -%}
+{%- set ns = namespace(found=false, value=0) -%}
+{%- for conn in topology.module_connections -%}
+{%- if (conn.source == entity and conn.target == target) or (conn.source == target and conn.target == entity) -%}
+{%- set ns.found = true -%}{%- set ns.value = conn.value -%}
+{%- endif -%}
+{%- endfor -%}
+"{{ target }}": {{ ns.value }}{{ ", " if not loop.last else "" }}
+{%- endfor -%}
+}{{ "," if not loop.last else "" }}
+{%- endfor %}
+}
+connection_DBC = {
+{%- for entity in topology.dbc_entities %}
+    "{{ entity }}": {
+{%- for target in topology.dbc_entities -%}
+{%- set ns = namespace(found=false, value=0) -%}
+{%- for conn in topology.dbc_connections -%}
+{%- if conn.source == entity and conn.target == target -%}
+{%- set ns.found = true -%}{%- set ns.value = conn.value -%}
+{%- endif -%}
+{%- endfor -%}
+"{{ target }}": {{ ns.value }}{{ ", " if not loop.last else "" }}
+{%- endfor -%}
+}{{ "," if not loop.last else "" }}
+{%- endfor %}
+}
+
+num_Zone = count_zones(connection_DBC)
+
+# ========================================================
+# === [SECTION-PLACEMENT]  Position & Gate Configs  ======
+# ========================================================
+
+{%- if igbt_positions and igbt_rotations %}
+igbt_configs = {
+{%- for type_id in igbt_positions.keys() %}
+{%- set type_num = type_id.replace('type_', '') %}
+    {{ type_num }}: {
+        "positions": [
+{%- for pos in igbt_positions[type_id] %}
+            Vector({{ pos[0] }}*width_ceramics, {{ pos[1] }}*length_ceramics, 0){{ "," if not loop.last else "" }}
+{%- endfor %}
+        ],
+        "rotations": {{ igbt_rotations[type_id] | tojson }}
+    }{{ "," if not loop.last else "" }}
+{%- endfor %}
+}
+{%- else %}
+igbt_configs = {}
+{%- endif %}
+
+{%- if fwd_positions %}
+positions_FWD = [
+{%- for pos in fwd_positions %}
+    Vector({{ pos[0] }}*width_ceramics, {{ pos[1] }}*length_ceramics, 0){{ "," if not loop.last else "" }}
+{%- endfor %}
+]
+{%- else %}
+positions_FWD = []
+{%- endif %}
+
+rotations_DBC = {{ dbc_rotations | tojson }}
+positions_DBC = generate_positions_DBC(len(rotations_DBC), length_ceramics, distance_DBC_DBC)
+rotations_FWD = {{ fwd_rotations | tojson }}
+
+{%- if gate_design and gate_design.types %}
+# --- 定义不同 Gate 类型的几何配置 (不含 cut_path) ---
+gate_configs = {
+{%- for type_id, type_config in gate_design.types.items() %}
+    {{ type_id if type_id is number else type_id.replace('type_', '') }}: {
+        "start_points": [
+{%- for start_point in type_config['start_points'] %}
+            ({% if start_point['x_ratio'] == 0 %}distance_Cu_Ceramics{% else %}{{ start_point['x_ratio'] }}*width_ceramics+distance_Cu_Ceramics{% endif %}, {% if start_point['y_ratio'] == 0 %}distance_Cu_Ceramics{% else %}distance_Cu_Ceramics+{{ start_point['y_ratio'] }}*length_ceramics{% endif %}){{ "," if not loop.last else "" }}
+{%- endfor %}
+        ],
+        "relative_moves": [
+{%- for moves in type_config['moves_list'] %}
+            [{% for move in moves %}({% if move['x_ratio'] == 0 %}0{% else %}{{ move['x_ratio'] }}*width_ceramics{% endif %}{% if move['y_ratio'] == 0 %},0{% else %}, {{ move['y_ratio'] }}*length_ceramics{% endif %}){{ ", " if not loop.last else "" }}{% endfor %}]{{ "," if not loop.last else "" }}
+{%- endfor %}
+        ]
+    }{{ "," if not loop.last else "" }}
+{%- endfor %}
+    # 可以根据需要添加更多类型
+}
+{%- else %}
+gate_configs = {}
+{%- endif %}
+
+# ========================================================
+# === [SECTION-CUTPATH]  Copper Cut Path Definition  =====
+# ========================================================
+
+{%- if cutting_design and cutting_design.paths %}
+# --- 定义通用的切割路径 ---
+cut_path_list = [ # 改成列表的列表
+{%- for path in cutting_design.paths %}
+    # {{ "第" + loop.index|string + "条切割路径" if loop.index <= 2 else path.name or ("cut_" + loop.index|string) }}
+    [
+{%- for point in path['points'] %}
+{%- set x_val = point['x_ratio'] %}
+{%- set y_val = point['y_ratio'] %}
+{%- if x_val == 999 and y_val == 999 %}
+        (EXTREME, EXTREME){{ "," if not loop.last else "" }}
+{%- elif x_val == 999 and y_val == -999 %}
+        (EXTREME, -EXTREME){{ "," if not loop.last else "" }}
+{%- elif x_val == -999 and y_val == 999 %}
+        (-EXTREME, EXTREME){{ "," if not loop.last else "" }}
+{%- elif x_val == -999 and y_val == -999 %}
+        (-EXTREME, -EXTREME){{ "," if not loop.last else "" }}
+{%- elif x_val == 999 %}
+        (EXTREME, {{ y_val }}*length_ceramics+distance_Cu_Ceramics){{ "," if not loop.last else "" }}
+{%- elif x_val == -999 %}
+        (-EXTREME, {{ y_val }}*length_ceramics+distance_Cu_Ceramics){{ "," if not loop.last else "" }}
+{%- elif y_val == 999 %}
+        ({{ x_val }}*width_ceramics+distance_Cu_Ceramics, EXTREME){{ "," if not loop.last else "" }}
+{%- elif y_val == -999 %}
+        ({{ x_val }}*width_ceramics+distance_Cu_Ceramics, -EXTREME){{ "," if not loop.last else "" }}
+{%- else %}
+        ({{ x_val }}*width_ceramics+distance_Cu_Ceramics, {{ y_val }}*length_ceramics+distance_Cu_Ceramics){{ "," if not loop.last else "" }}
+{%- endif %}
+{%- endfor %}
+    ]{{ "," if not loop.last else "" }}
+{%- endfor %}
+]
+{%- else %}
+cut_path_list = []
+{%- endif %}
+
+# ========================================================
+# === [SECTION-MAIN]  Main Assembly Logic  ===============
+# ========================================================
+
+def main():
+    # 声明module为全局变量
+    global module
+    
+    # --- 使用 utils 函数处理 IGBT 配置 ---
+    all_positions_IGBT, all_rotations_IGBT, igbt_index_to_type = process_igbt_configs(igbt_configs)
+    num_total_IGBT = len(all_positions_IGBT)
+    # --- IGBT 配置处理结束 ---
+
+    # ========================================================
+    # 1. 创建DBC模板
+    # --------------------------------------------------------
+    ceramics = create_ceramics(
+        width=width_ceramics,
+        length=length_ceramics,
+        thickness=thickness_ceramics,
+    )
+
+    # --------------------------------------------------------
+    # 1.1 创建上铜层
+    all_start_points, all_relative_moves = collect_all_gate_geometries(gate_configs)
+
+    upper_Cu_base = create_upper_Cu_base(
+        Cu_slot=distance_Cu_Cu,
+        ceramics=ceramics,
+        start_points_Gate=all_start_points,
+        relative_moves_Gate_list=all_relative_moves,
+        thickness_upper_Cu=thickness_upper_Cu,
+        fillet_value=fillet_value,
+        width_ceramics=width_ceramics,
+        distance_Cu_Ceramics=distance_Cu_Ceramics,
+        length_ceramics=length_ceramics
+    )
+
+    upper_Cu_Gates = create_labeled_gates(
+        gate_configs=gate_configs,
+        ceramics=ceramics,
+        thickness=thickness_upper_Cu,
+        fillet=fillet_value,
+        margin=distance_Cu_Ceramics
+    )
+
+    solids = cut_copper(
+        copper=upper_Cu_base,
+        paths_points=cut_path_list,
+        Cu_slot=distance_Cu_Cu,
+        num_copper = num_Zone
+    )
+    sorted_by_x = sorted(solids, key=lambda s: s.Center().x)
+    Zone = [cq.Workplane().add(s) for s in sorted_by_x]
+
+    # --------------------------------------------------------
+    # 1.2. 创建下铜层
+    bottom_Cu = create_bottom_copper_layer(
+        ceramics=ceramics,
+        width_ceramics=width_ceramics,
+        length_ceramics=length_ceramics,
+        distance_Cu_Ceramics=distance_Cu_Ceramics,
+        radius_bottom_hex=radius_bottom_hex,
+        hex_spacing=hex_spacing,
+        thickness_bottom_Cu=thickness_bottom_Cu
+    )
+
+    # --------------------------------------------------------
+    # 1.3.将陶瓷板、上铜层(Zones)、下铜层组合成DBC模板
+    DBC = Assembly()
+    DBC.add(ceramics, name="ceramics", color=get_color("ceramics"))
+    for i in range(len(Zone)):
+        DBC.add(Zone[i], name=f"Zone_{i}", color=get_color("copper"))
+
+    if upper_Cu_Gates:
+        for i, (gate_obj, gate_type) in enumerate(upper_Cu_Gates):
+            DBC.add(gate_obj, name=f"gate_type{gate_type}_{i}", color=get_color("copper"))
+
+    DBC.add(bottom_Cu, name="bottom_hex", color=get_color("copper"))
+
+    # ========================================================
+    # 2. 创建die、bond wire、solder，并与DBC模板装配
+    # --------------------------------------------------------
+    # 2.1 创建基板焊料层
+    substrate_solder = create_substrate_solder(
+        bottom_copper=bottom_Cu,
+        width_ceramics=width_ceramics,
+        length_ceramics=length_ceramics,
+        distance_Cu_Ceramics=distance_Cu_Ceramics,
+        thickness_substrate_solder=thickness_substrate_solder
+    )
+    DBC.add(substrate_solder, name="substrate_solder",color=get_color("solder"))
+
+    # --------------------------------------------------------
+    # 2.2 根据连接关系创建芯片组件 (IGBT & FWD) 并添加到DBC模板
+    die_IGBT_dict, assembly_IGBT_dict, die_FWD_dict, assembly_FWD_dict = process_chip_connections(
+        connection_DBC=connection_DBC,
+        Zone=Zone,
+        DBC=DBC,
+        positions_IGBT=all_positions_IGBT,
+        rotations_IGBT=all_rotations_IGBT,
+        positions_FWD=positions_FWD,
+        rotations_FWD=rotations_FWD,
+        width_die_IGBT=width_die_IGBT,
+        length_die_IGBT=length_die_IGBT,
+        width_die_FWD=width_die_FWD,
+        length_die_FWD=length_die_FWD,
+        thickness_die=thickness_die,
+        thickness_die_solder=thickness_die_solder,
+        num_IGBT=num_total_IGBT,
+        num_FWD=len(positions_FWD),
+        num_bond_wire_IGBT=num_bond_wire_IGBT,
+        num_bond_wire_FWD=num_bond_wire_FWD,
+        connection_direction=(0,1),# 芯片键合线连接方向
+        connection_offset=1
+    )
+
+    # --------------------------------------------------------
+    # 2.3 创建 IGBT 到 Gate 的键合线 (Before Copy)
+    '''igbt_gate_bond_wires = create_igbt_to_gate_bondwires(
+        die_IGBT_dict=die_IGBT_dict,
+        assembly_IGBT_dict=assembly_IGBT_dict,
+        rotations_IGBT=all_rotations_IGBT,
+        positions_IGBT=all_positions_IGBT,
+        labeled_upper_Cu_Gates_in_template=upper_Cu_Gates,
+        igbt_index_to_type=igbt_index_to_type,
+        length_die_IGBT=length_die_IGBT,
+        num_IGBT=num_total_IGBT,
+        sample_density=15,
+        sampling_method="grid"
+    )
+
+    for wire, wire_name in igbt_gate_bond_wires:
+        DBC.add(wire, name=wire_name, color=get_color("bond_wire"))
+    '''
+    # ========================================================
+    # 3. 创建功率器件
+    # --------------------------------------------------------
+    # 3.1 根据器件功能生成多个DBC (复制模板)
+    DBCs = []
+    for i in range(len(positions_DBC)):
+        new_dbc = copy_assembly(DBC, i)
+        if i < len(rotations_DBC) and i < len(positions_DBC):
+            translated_dbc = translate_assembly(new_dbc, rotations_DBC[i], positions_DBC[i])
+            DBCs.append(translated_dbc)
+        else:
+            DBCs.append(new_dbc)
+
+    # --------------------------------------------------------
+    # 3.2 创建基板
+    substrate = create_substrate_for_dbcs(
+        DBCs=DBCs,
+        thickness_substrate=thickness_substrate,
+        distance_substrate=distance_substrate,
+        substrate_reference_z=DBCs[0].find(f"substrate_solder_0").obj.faces("<Z").val().Center().z
+    )
+
+    module = Assembly()
+    for i, dbc_assembly in enumerate(DBCs):
+        module.add(dbc_assembly, name=f"DBC_{i}")
+    module.add(substrate, name="substrate", color=get_color("Al"))
+
+    # --------------------------------------------------------
+    # 3.4 创建DBC间的连接 (Zone to Zone)
+    zone_info = identify_input_output_zones(connection_DBC)
+
+    connection_pairs = extract_connection_pairs(connection_module)
+    connection_template = generate_connection_params_template(connection_pairs)
+    selectors = create_edge_selectors(tolerance=TOLERANCE)
+
+    connection_params_info = {
+        'global': { 'tolerance': TOLERANCE, 'bond_wire_diameter': 0.5 },
+        'default': { 'num_points': 5, 'distance_interval': 1, 'max_angle': 50, 'edge_selector1': selectors['min_y_horizontal'], 'edge_selector2': selectors['auto_match'] }
+    }
+    
+    '''
+    create_dbc_connections(
+        DBCs=DBCs,
+        connection_module=connection_module,
+        module=module,
+        connection_params_info=connection_params_info,
+    )'''
+
+    # ====================================================
+    # === [SECTION-DISPLAY]  Final Show Call  ============
+    # ====================================================
+    # 获取当前脚本所在目录，确保 STEP 文件导出到脚本所在目录
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    step_filename = "{{ device_name }}.step"
+    step_path = os.path.join(script_dir, step_filename)
+    module.export(step_path)
+    print(f"STEP 装配已导出: {step_path}")
+    
+
+
+main()
+    
+# 模块变量可用于外部访问
+# module 变量包含完整的装配体 

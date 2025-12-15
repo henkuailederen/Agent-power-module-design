@@ -1,0 +1,92 @@
+ceramics_width: 51.5
+ceramics_length: 48
+ceramics_thickness: 0.8
+upper_copper_thickness: 0.2
+lower_copper_thickness: 0.3
+fillet_radius: 0.5
+
+igbt_width: 6
+igbt_length: 7
+fwd_width: 3
+fwd_length: 6.5
+
+cu2cu_margin: 1.0
+cu2ceramics_margin: 1.5
+dbc2dbc_margin: 3.0
+substrate_edge_margin: 3.0
+
+substrate_solder_thickness: 0.15
+die_solder_thickness: 0.1
+die_thickness: 0.15
+
+igbt_bondwires: 6
+fwd_bondwires: 6
+
+gate_design:
+  type_1:
+    start: [0.14, 0.0]
+    moves: [[0.03, 0.0], [0.0, 0.46], [-0.09, 0.0], [0.0, 0.35], [-0.03, 0.0], [0.0, -0.39], [0.09, 0.0]]
+  type_2:
+    start: [0.83, 0.0]
+    moves: [[0.03, 0.0], [0.0, 0.46], [-0.09, 0.0], [0.0, 0.35], [-0.03, 0.0], [0.0, -0.39], [0.09, 0.0]]
+
+cutting_design:
+  path_1: [[0.07, MAX], [0.07, 0.80]]
+  path_2: [[0.46, MIN], [0.46, 0.44], [0.39, 0.44], [0.39, 0.83], [0.85, 0.83], [0.85, 0.66], [MAX, 0.66]]
+  path_3: [[0.73, 0.83], [0.73, 0.82]]
+
+igbt_positions:
+  type_1: [[0.15, 0.70], [0.15, 0.53], [0.23, 0.27], [0.23, 0.06]]
+  type_2: [[0.59, 0.69], [0.59, 0.51], [0.68, 0.26], [0.68, 0.09]]
+
+fwd_positions: [[0.31, 0.70], [0.31, 0.53], [0.39, 0.27], [0.39, 0.06], [0.49, 0.69], [0.49, 0.51], [0.56, 0.28], [0.56, 0.10]]
+
+igbt_rotations:
+  type_1: [180, 180, 180, 180]
+  type_2: [180, 180, 180, 180]
+
+fwd_rotations: [180, 180, 180, 180, 180, 180, 180, 180]
+
+dbc_count: 3
+dbc_rotations: [0, 0, 0]
+
+module_connections: []
+
+dbc_connections: [
+  [igbt0, fwd0],
+  [igbt1, fwd1], 
+  [igbt2, fwd2],
+  [igbt3, fwd3],
+  [fwd4, igbt4],
+  [fwd5, igbt5],
+  [fwd6, igbt6],
+  [fwd7, igbt7],
+  [igbt0, zone0],
+  [igbt1, zone0],
+  [igbt2, zone0],
+  [igbt3, zone0],
+  [fwd0, zone2],
+  [fwd1, zone2],
+  [fwd2, zone2],
+  [fwd3, zone2],
+  [igbt4, zone3],
+  [igbt5, zone3],
+  [igbt6, zone3],
+  [igbt7, zone3],
+  [zone1, igbt0],
+  [zone1, fwd0],
+  [zone1, igbt1],
+  [zone1, fwd1],
+  [zone1, igbt2],
+  [zone1, fwd2],
+  [zone1, igbt3],
+  [zone1, fwd3],
+  [zone2, igbt4],
+  [zone2, fwd4],
+  [zone2, igbt5],
+  [zone2, fwd5],
+  [zone2, igbt6],
+  [zone2, fwd6],
+  [zone2, igbt7],
+  [zone2, fwd7]
+] 

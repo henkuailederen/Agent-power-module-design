@@ -1,0 +1,204 @@
+{
+  "module_id": "3P6P_V1_opt",
+  "ceramics_width": 48.0,
+  "ceramics_length": 44.0,
+  "ceramics_thickness": 0.8,
+  "upper_copper_thickness": 0.2,
+  "lower_copper_thickness": 0.3,
+  "fillet_radius": 0.5,
+  "igbt_width": 10,
+  "igbt_length": 10,
+  "fwd_width": 7,
+  "fwd_length": 7,
+  "cu2cu_margin": 1.0,
+  "cu2ceramics_margin": 1.5,
+  "dbc2dbc_margin": 3.0,
+  "substrate_edge_margin": 3.0,
+  "substrate_solder_thickness": 0.15,
+  "die_solder_thickness": 0.1,
+  "die_thickness": 0.15,
+  "igbt_bondwires": 6,
+  "fwd_bondwires": 6,
+  "gate_design": {
+    "type_1": {
+      "start": [
+        [
+          0.93,
+          0.104
+        ],
+        [
+          0.93,
+          0.573
+        ]
+      ],
+      "moves": [
+        [
+          [
+            -0.04,
+            0
+          ],
+          [
+            0,
+            0.09
+          ],
+          [
+            0.04,
+            0
+          ]
+        ],
+        [
+          [
+            -0.04,
+            0
+          ],
+          [
+            0,
+            0.09
+          ],
+          [
+            0.04,
+            0
+          ]
+        ]
+      ]
+    }
+  },
+  "cutting_design": {
+    "path_1": [
+      [
+        0.63,
+        "MIN"
+      ],
+      [
+        0.63,
+        0.43
+      ],
+      [
+        0.08,
+        0.43
+      ],
+      [
+        0.08,
+        0.7
+      ],
+      [
+        0.17,
+        0.7
+      ],
+      [
+        0.17,
+        "MAX"
+      ]
+    ],
+    "path_2": [
+      [
+        0.75,
+        "MAX"
+      ],
+      [
+        0.75,
+        0.11
+      ],
+      [
+        0.63,
+        0.11
+      ]
+    ]
+  },
+  "igbt_positions": {
+    "type_1": [
+      [
+        0.5042617506215187,
+        0.6844038391136226
+      ],
+      [
+        0.4176636432671857,
+        0.1429627884976944
+      ]
+    ]
+  },
+  "igbt_rotations": {
+    "type_1": [
+      180,
+      180
+    ]
+  },
+  "fwd_positions": [
+    [
+      0.2259970595544509,
+      0.7299847041923865
+    ],
+    [
+      0.16213317834539237,
+      0.21053701501588085
+    ]
+  ],
+  "fwd_rotations": [
+    180,
+    180
+  ],
+  "dbc_count": 1,
+  "dbc_rotations": [
+    0
+  ],
+  "module_connections": [
+    [
+      "zone0_0",
+      "zone0_1"
+    ],
+    [
+      "zone2_0",
+      "zone2_1"
+    ],
+    [
+      "zone0_1",
+      "zone0_2"
+    ],
+    [
+      "zone2_1",
+      "zone2_2"
+    ]
+  ],
+  "dbc_connections": [
+    [
+      "igbt0",
+      "zone2"
+    ],
+    [
+      "igbt0",
+      "zone2"
+    ],
+    [
+      "fwd0",
+      "igbt0"
+    ],
+    [
+      "igbt1",
+      "zone1"
+    ],
+    [
+      "igbt1",
+      "zone1"
+    ],
+    [
+      "fwd1",
+      "igbt1"
+    ],
+    [
+      "zone0",
+      "igbt1"
+    ],
+    [
+      "zone0",
+      "fwd1"
+    ],
+    [
+      "zone1",
+      "igbt0"
+    ],
+    [
+      "zone1",
+      "fwd0"
+    ]
+  ]
+}

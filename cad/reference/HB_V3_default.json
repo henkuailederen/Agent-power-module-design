@@ -1,0 +1,53 @@
+ceramics_width: 44.0
+ceramics_length: 48.0
+ceramics_thickness: 0.8
+upper_copper_thickness: 0.2
+lower_copper_thickness: 0.3
+fillet_radius: 0.5
+
+igbt_width: 10
+igbt_length: 10
+fwd_width: 5
+fwd_length: 5
+
+cu2cu_margin: 1.0
+cu2ceramics_margin: 1.5
+dbc2dbc_margin: 3.0
+substrate_edge_margin: 3.0
+
+substrate_solder_thickness: 0.15
+die_solder_thickness: 0.1
+die_thickness: 0.15
+
+igbt_bondwires: 6
+fwd_bondwires: 6
+
+gate_design:
+  type_1:
+    start: [0.0, 0.1]
+    moves: [[0.091, 0.0], [0.0, 0.83], [-0.091, 0.0]]
+
+cutting_design:
+  path_1: [[0.48, MIN], [0.48, 0.06], [0.17, 0.06], [0.17, 0.85], [MIN, 0.85]]
+  path_2: [[0.77, MIN], [0.77, 0.08], [0.73, 0.08], [0.73, 0.31], [0.77, 0.31], [0.77, 0.73], [0.73, 0.73], [0.73, 0.83], [0.66, 0.83], [0.66, MAX]]
+
+igbt_positions:
+  type_1: [[0.26, 0.68], [0.53, 0.41], [0.26, 0.14]]
+
+fwd_positions: [[0.54, 0.74], [0.31, 0.47], [0.54, 0.19]]
+
+igbt_rotations:
+  type_1: [180, 180, 0]
+
+fwd_rotations: [0, 0, 0]
+
+dbc_count: 2
+dbc_rotations: [0, 180]
+
+module_connections: [["zone0_0", "zone2_1"], ["zone0_1", "zone1_0"]]
+
+dbc_connections: [
+  ["igbt0", "zone0"], ["fwd0", "igbt0"], ["igbt1", "fwd1"], ["fwd1", "zone0"],
+  ["igbt2", "zone0"], ["fwd2", "igbt2"], ["zone1", "igbt0"], ["zone1", "fwd0"],
+  ["zone1", "igbt1"], ["zone1", "fwd1"], ["zone1", "igbt2"], ["zone1", "fwd2"]
+] 
