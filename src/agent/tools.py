@@ -1,15 +1,6 @@
 """
 把 `src/tools` 目录中的底层函数封装成 LangChain Tool，并提供统一的工具列表。
 
-当前已经封装：
-- `build_step_model`：根据功率器件 JSON 配置生成 3D CAD 模型（STEP 文件）；
-- `build_device_config_from_template`：基于参考模板 + 少量参数修改，生成完整的器件 JSON 配置；
-- `read_device_json`：读取已有模块的 JSON 配置，便于在原有模块基础上修改。
-
-后续可以在这里继续注册：
-- JSON 合法性检查（validate_json）
-- MATLAB 仿真（matlab_sim）
-- 数据集读写（dataset_io）等。
 """
 
 from __future__ import annotations
