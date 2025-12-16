@@ -27,7 +27,6 @@ Language: [中文 README](README.md) | **English**
 ### Key Features
 
 - **Tool pool**: connects “parameters → CAD → simulation → post-processing → metrics → iteration/optimization” to reduce manual, repetitive work.
-- **Template-driven configuration**: built-in reference templates `3P6P_V1/3P6P_V2/HB_V1~HB_V4` under `cad/reference/`, enabling fast “template + overrides” generation.
 - **Strong validation & prechecks**:
   - **Schema validation** via Pydantic before CAD build (see `src/tools/cad_schema.py`).
   - **Geometry precheck** for chip out-of-zone and chip overlap with actionable suggestions (see `src/tools/json_precheck.py`).
