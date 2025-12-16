@@ -1,19 +1,12 @@
-## Power Module Agent：功率模块结构设计 + CAD + 热仿真 + 优化智能体
+## Power Module Agent：功率模块结构设计 + CAD + 仿真 + 优化智能体
 
-> **LLM + Tool Pool** 驱动的功率模块结构设计自动化流水线：**参数化 CAD（STEP）** + **MATLAB–COMSOL 联合仿真（.mph）** + **自动后处理（芯片最高温 CSV）** + **可插拔优化（SA / 未来可扩展）**
-
-<!-- 建议开源后补上（可选）：
-- GitHub Actions CI badge
-- License badge
-- Python version badge
-- Stars badge
--->
+> **LLM + Tool Pool** 驱动的功率模块结构设计(工具易扩展)：**代码编程式 CAD（STEP） C + **MATLAB–COMSOL 联合仿真（.mph）** + **数据后处理（.m or.py）** + **优化（.py）**
 
 语言：**中文** | [English README](README.en.md)
 
-面向功率模块封装/结构设计的对话式 Agent：以 **JSON 结构参数**驱动 **CadQuery 参数化建模**（导出 STEP），并可通过 **MATLAB Engine + COMSOL LiveLink** 自动完成稳态热仿真与后处理（芯片最高温统计），支持基于模拟退火（SA）的结构/布局优化流程。
+面向功率模块封装/结构设计的对话式 Agent：以 **JSON 结构参数**驱动 **CadQuery 编程式建模**（导出 STEP），并可通过 **MATLAB Engine + COMSOL LiveLink** 完成仿真，支持模拟退火（SA）的优化算法（可拓展）。
 
-> 适用场景：快速生成封装方案、批量参数扫描、自动化热仿真评估、优化芯片布局/关键尺寸、把“设计—仿真—优化”从手工流程变成可复现的工程流水线。
+> 适用场景：快速生成封装方案、批量参数扫描、自动化热仿真评估、优化芯片布局/关键尺寸、把“设计—仿真—优化”从手工流程变成可拓展的Agent流。
 
 ---
 
@@ -38,14 +31,13 @@
 ### 主要能力（Features）
 
 - **端到端闭环**：把“参数 → CAD → 仿真 → 后处理 → 指标 → 迭代/优化”串起来，减少手工重复劳动。
-- **模板化结构参数**：内置 `3P6P_V1/3P6P_V2/HB_V1~HB_V4` 参考模板（位于 `cad/reference/`），支持“模板 + overrides”快速生成完整配置（更适合做快速探索与参数扫描）。
+- **模板化结构参数**：内置 `3P6P_V1/3P6P_V2/HB_V1~HB_V4` 参考模板（位于 `cad/reference/`），支持“模板 + overrides”快速生成完整配置（更适合做快速探索与参数扫描），也支持不基于模板全新创建配置。
 - **强校验 + 预检**：
   - Pydantic 结构校验：在进入 CAD 构建前就把字段类型/结构问题挡住（`src/tools/cad_schema.py`）。
   - 几何预检：在渲染/导出前检查芯片越界与重叠，并给出可操作的修复建议（`src/tools/json_precheck.py`）。
 - **JSON → STEP 的 CAD 流水线**：自动渲染 CAD Python 脚本并导出 STEP（输出到 `data/step/`），同时沉淀可复现的输入/中间件：`data/json/` 与 `data/py/`。
 - **MATLAB–COMSOL 联合仿真自动化**：
   - STEP → COMSOL 求解 → 保存 `.mph`（`run_thermal_sim_from_step`）。
-  - `.mph` → 芯片最高温统计 → CSV 追加落盘（`compute_chip_maxT_from_mph`）。
 - **可复现的产物管理**：
   - 用 `module_id` 统一标识一个结构版本（对应 `data/json/<module_id>.json`、`data/step/<module_id>.step`）。
   - 用 `run_id` 统一标识一个仿真 case（同一 `run_id` 覆盖 `.mph`，CSV 追加记录历史对比）。
@@ -70,7 +62,6 @@
   - `llm.bind_tools(get_all_tools())` 绑定工具
   - 执行“LLM → tool_calls → 执行工具 → ToolMessage 回传 → 再调用 LLM”的循环
 
-一句话：**`src/tools` 负责“能做什么”，`src/agent` 负责“怎么让 LLM 调用它”。**
 
 ---
 
