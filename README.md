@@ -14,13 +14,13 @@
 
 - [主要能力（Features）](#主要能力features)
 - [整体架构（Architecture）](#整体架构architecture)
+- [目录结构（Project Layout）](#目录结构project-layout)
 - [环境依赖（Prerequisites）](#环境依赖prerequisites)
 - [安装（Installation）](#安装installation)
 - [配置（Configuration）](#配置configuration)
 - [快速开始（Quick Start）](#快速开始quick-start)
 - [如何扩展 Tool Pool（Extensibility）](#如何扩展-tool-poolextensibility)
 - [工具接口标准化设计指南（Tool Contract）](#工具接口标准化设计指南tool-contract)
-- [目录结构（Project Layout）](#目录结构project-layout)
 - [常见问题（FAQ / Troubleshooting）](#常见问题faq--troubleshooting)
 - [贡献（Contributing）](#贡献contributing)
 - [许可证（License）](#许可证license)
@@ -61,6 +61,26 @@
   - `llm.bind_tools(get_all_tools())` 绑定工具
   - 执行“LLM → tool_calls → 执行工具 → ToolMessage 回传 → 再调用 LLM”的循环
 
+
+---
+
+### 目录结构（Project Layout）
+
+- `cad/`：CAD 模板与渲染工具（Jinja2 模板、参考配置等）
+  - `cad/reference/`：参考模板（注意：扩展名为 `.json`，但内容为 YAML）
+  - `cad/template.j2`：CAD 脚本模板
+- `data/`：所有可复现产物与中间结果
+  - `data/json/`：器件 JSON（以 `module_id` 命名）
+  - `data/py/`：渲染得到的 CAD Python 脚本
+  - `data/step/`：导出的 STEP 3D 模型
+  - `data/sim_results/`：`.mph` 与后处理 CSV
+  - `data/opt/`：优化历史/元信息
+- `sim/`：MATLAB 脚本（`run_sim_from_step.m`、`compute_chip_maxT.m` 等）
+- `src/`：Python 主工程
+  - `src/main.py`：CLI 入口
+  - `src/config.py`：LLM 配置（从 `.env` / 环境变量读取）
+  - `src/agent/`：智能体层（提示词/工作流/工具封装）
+  - `src/tools/`：CAD / 仿真 / 优化底层工具
 
 ---
 
@@ -271,26 +291,6 @@ Windows PowerShell：
 
 - 关键事件建议打日志：工具名、关键参数（脱敏）、产物路径、耗时、异常摘要。
 - 推荐在日志里带上 `module_id/run_id/session_id` 等“关联 ID”，便于复盘一条链路。
-
----
-
-### 目录结构（Project Layout）
-
-- `cad/`：CAD 模板与渲染工具（Jinja2 模板、参考配置等）
-  - `cad/reference/`：参考模板（注意：扩展名为 `.json`，但内容为 YAML）
-  - `cad/template.j2`：CAD 脚本模板
-- `data/`：所有可复现产物与中间结果
-  - `data/json/`：器件 JSON（以 `module_id` 命名）
-  - `data/py/`：渲染得到的 CAD Python 脚本
-  - `data/step/`：导出的 STEP 3D 模型
-  - `data/sim_results/`：`.mph` 与后处理 CSV
-  - `data/opt/`：优化历史/元信息
-- `sim/`：MATLAB 脚本（`run_sim_from_step.m`、`compute_chip_maxT.m` 等）
-- `src/`：Python 主工程
-  - `src/main.py`：CLI 入口
-  - `src/config.py`：LLM 配置（从 `.env` / 环境变量读取）
-  - `src/agent/`：智能体层（提示词/工作流/工具封装）
-  - `src/tools/`：CAD / 仿真 / 优化底层工具
 
 ---
 
