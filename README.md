@@ -1,6 +1,6 @@
 ## Power Module Agent：功率模块结构设计 + CAD + 仿真 + 优化智能体
 
-> **LLM + Tool Pool** 驱动的功率模块结构设计(工具易扩展)：**代码编程式 CAD（STEP） C + **MATLAB–COMSOL 联合仿真（.mph）** + **数据后处理（.m or.py）** + **优化（.py）**
+> **LLM + Tool Pool** 驱动的功率模块结构设计(工具易扩展)：**代码编程式 CAD（STEP）** + **MATLAB–COMSOL 联合仿真（.mph）** + **数据后处理（.m or.py）** + **优化（.py）**
 
 语言：**中文** | [English README](README.en.md)
 
