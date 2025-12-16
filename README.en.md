@@ -1,6 +1,6 @@
-## Power Module Agent: Power Module Packaging Design + CAD + Thermal Simulation + Optimization Agent
+## Power Module Agent: Power Module Packaging Design + CAD + Simulation + Optimization Agent
 
-> An **LLM + Tool Pool** driven automation pipeline for power module design: **parametric CAD (STEP)** + **MATLAB–COMSOL co-simulation (.mph)** + **automated post-processing (chip max temperature CSV)** + **pluggable optimization (SA now, extensible later)**.
+> An **LLM + Tool Pool** driven agent pipeline for power module design: **programmatic CAD (STEP)** + **MATLAB–COMSOL co-simulation (.mph)** + **data post-processing (.m or.py)** + **optimization (SA now, extensible later)**.
 
 Language: [中文 README](README.md) | **English**
 
@@ -26,7 +26,7 @@ Language: [中文 README](README.md) | **English**
 
 ### Key Features
 
-- **End-to-end closed loop**: connects “parameters → CAD → simulation → post-processing → metrics → iteration/optimization” to reduce manual, repetitive work.
+- **Tool pool**: connects “parameters → CAD → simulation → post-processing → metrics → iteration/optimization” to reduce manual, repetitive work.
 - **Template-driven configuration**: built-in reference templates `3P6P_V1/3P6P_V2/HB_V1~HB_V4` under `cad/reference/`, enabling fast “template + overrides” generation.
 - **Strong validation & prechecks**:
   - **Schema validation** via Pydantic before CAD build (see `src/tools/cad_schema.py`).
